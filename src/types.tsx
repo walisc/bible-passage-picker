@@ -1,15 +1,15 @@
-export type PassageValueType = {
-  mode: PassageModeType
-  single: VerseValueType | null
-  start: VerseValueType | null
-  end: VerseValueType | null
-}
 
-export type VerseValueType = {
+export type PassageDetails = {
   book?: string
-  chapter?: string
-  verse?: string
+  chapter?: number
+  verse?: number
 }
 
 
-export type PassageModeType = 'single' | 'multiple'
+export type Passage = {
+  start: PassageDetails,
+  end?: PassageDetails
+}
+
+export type BiblePassages = Passage[]
+
