@@ -1,5 +1,5 @@
 import React, {ChangeEvent, Component, useState} from 'react';
-import {Box, Button, NativeSelect, OutlinedInput, Typography} from "@mui/material";
+import {Box, Button, NativeSelect, OutlinedInput, Switch, Typography} from "@mui/material";
 import ModeToggle from "./mode-toggle";
 import {getBiblePassageSelectionToDisplay, getPassageUrlInBibleGateway} from "../utils";
 import MultiplePassageForm from "./multiple-passage-form";
@@ -18,40 +18,69 @@ type VersePickerAdderProps = VersePickerBaseProps & {
 type PassageStartOrEnd = "start" | "end"
 type PassageSelectionType= "book" | "chapter" | "verse"
 
-class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, Passage> {
-  private onDismiss:() => void 
+type VersePickerState = {
+  data: Passage
+  ui: {
+    hasEnd: boolean
+    hasEndText: string
+  }
+}
+
+class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, VersePickerState> {
+  protected onDismiss:() => void 
   constructor(props: T){
     super(props)
     this.onDismiss = this.props.onDismiss
     this.state = {
-      start: {
-        book: "Genesis",
-        chapter: 1,
-        verse: 1
+      data: {
+        start: {
+          book: "Genesis",
+          chapter: 1,
+          verse: 1
+        }
+      },
+      ui: {
+        hasEnd: false,
+        hasEndText: "Has end?"
       }
+      
     }
   }
 
   OnSelectorChange(startOrEnd:PassageStartOrEnd, selectionType:PassageSelectionType){
     return (evt:ChangeEvent<HTMLSelectElement>) => {
-      let updateState:Passage = {...this.state};
-      (updateState[startOrEnd] as any)[selectionType] = evt.target.value
+      let updateState:VersePickerState = {...this.state};
+      (updateState.data[startOrEnd] as any)[selectionType] = evt.target.value
 
       if (selectionType == "book"){
-        (updateState[startOrEnd] as any)["chapter"] = 1;
-        (updateState[startOrEnd] as any)["verse"] = 1;
+        (updateState.data[startOrEnd] as any)["chapter"] = 1;
+        (updateState.data[startOrEnd] as any)["verse"] = 1;
       }
       else if (selectionType == "chapter"){
-        (updateState[startOrEnd] as any)["verse"] = 1
+        (updateState.data[startOrEnd] as any)["verse"] = 1
       }
       this.setState(updateState)
     }
     
   }
 
+  OnHasEndVerseSelected(event: React.ChangeEvent<HTMLInputElement>){
+    let updateState:VersePickerState = {...this.state};
+    updateState.ui.hasEnd = event.target.checked
+    if (updateState.ui.hasEnd){
+      updateState.data.end = {...updateState.data.start}
+      updateState.ui.hasEndText = "Has no end?"
+    }
+    else if ("end" in updateState.data){
+      delete updateState.data.end
+      updateState.ui.hasEndText = "Has end?"
+    }
+    this.setState(updateState)
+  }
+
   GetPassageSelection(startOrEnd:PassageStartOrEnd, selectionType:PassageSelectionType){
-    if (startOrEnd in this.state && selectionType in (this.state as any)[startOrEnd]){
-      return (this.state as any)[startOrEnd][selectionType]
+    if (startOrEnd in this.state.data && selectionType in (this.state.data as any)[startOrEnd]){
+      return (this.state.data as any)[startOrEnd][selectionType]
     }
     return ""
   }
@@ -64,28 +93,29 @@ class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, Passa
     if (selectionType == "book"){
       return Object.keys(BibleBooks)
     }
-    else if (selectionType == "chapter" && (this.state as any)[startOrEnd].book){
-      return lengthToArray(BibleBooks[(this.state as any)[startOrEnd].book].no_of_chapters)
+    else if (selectionType == "chapter" && (this.state.data as any)[startOrEnd].book){
+      return lengthToArray(BibleBooks[(this.state.data as any)[startOrEnd].book].no_of_chapters)
     }
-    else if (selectionType == "verse" && (this.state as any)[startOrEnd].book && (this.state as any)[startOrEnd].chapter){
-      return lengthToArray(BibleBooks[(this.state as any)[startOrEnd].book].chapters_to_number_of_verses[(this.state as any)[startOrEnd].chapter-1])
+    else if (selectionType == "verse" && (this.state.data as any)[startOrEnd].book && (this.state.data as any)[startOrEnd].chapter){
+      return lengthToArray(BibleBooks[(this.state.data as any)[startOrEnd].book].chapters_to_number_of_verses[(this.state.data as any)[startOrEnd].chapter-1])
     }
     return []
   }
 
   GetPassageSelector(){
     const getSelector = (label:string, startOrEnd:PassageStartOrEnd, selectionType:PassageSelectionType) => {
-        return (<Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: 280,
-            '& > *': {
-              m: 1,
-            },
-          }}
-        >
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: 280,
+              '& > *': {
+                m: 1,
+              },
+            }}
+          >
           <NativeSelect
             style={{width: '95%'}}
             value={this.GetPassageSelection(startOrEnd, selectionType)}
@@ -99,19 +129,47 @@ class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, Passa
         </Box>)
     }
     
-    const getStartComponent = () => {
+    const getPassageComponent = (startOrEnd:PassageStartOrEnd) => {
       return (
         <div>
-          {getSelector("Book", "start", "book")}
-          {getSelector("Chapter", "start", "chapter")}
-          {getSelector("Verse", "start", "verse")}
+          {getSelector("Book", startOrEnd, "book")}
+          {getSelector("Chapter", startOrEnd, "chapter")}
+          {getSelector("Verse", startOrEnd, "verse")}
         </div>
       )
     }
 
-    return (<div>
-      {getStartComponent()}
-    </div>)
+    return (
+      <div>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            '& > *': {
+              m: 1,
+            },
+          }}
+        >
+          <div style={{display: 'flex'}}>
+            <Switch
+                checked={this.state.ui.hasEnd}
+                onChange={this.OnHasEndVerseSelected.bind(this)}
+                inputProps={{ 'aria-label': 'controlled' }}
+              />
+              <p style={{marginTop: "12px", fontSize: "12px"}}>{this.state.ui.hasEndText}</p>
+          </div>
+        </Box>
+        <div style={{display: 'flex'}}>
+          <div>
+            {getPassageComponent("start")}
+          </div>
+          <div>
+            {this.state.ui.hasEnd ? getPassageComponent("end") : ''}
+          </div>
+      </div>
+    </div>
+    )
   }
 }
 
@@ -120,6 +178,19 @@ export class VersePickerAdder extends VersePickerBase<VersePickerAdderProps>{
   private onPassageAdd:(addPassage:Passage) => void
   constructor(props: VersePickerAdderProps){
     super(props)
+    this.state = {
+      data: {
+        start: {
+          book: "Genesis",
+          chapter: 1,
+          verse: 1
+        }
+      },
+      ui: {
+        hasEnd: false,
+        hasEndText: "Has end?"
+      }
+    }
     this.onPassageAdd = this.props.onPassageAdd
   }
 
@@ -141,6 +212,23 @@ export class VersePickerAdder extends VersePickerBase<VersePickerAdderProps>{
             {this.GetPassageSelector()}
 
           </Box>
+          <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  '& > *': {
+                    m: 1,
+                  },
+                }}
+                className={"mb-6"}
+              >
+                <div style={{display: 'flex'}}>
+                  <Button variant="outlined" style={{marginRight: 8}} onClick={this.onDismiss}>Cancel</Button>
+                  <Button variant="outlined" style={{marginLeft: 8}} onClick={() => this.onPassageAdd(this.state.data)}>Add</Button>
+                </div>
+          </Box>
+
         </div>
       )
   }
