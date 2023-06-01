@@ -26,6 +26,15 @@ type VersePickerState = {
   }
 }
 
+const HAS_END_TOGGLE_BUTTON_LABEL = {
+  ENABLED: "Has no end?",
+  NOT_ENABLED: "Has end?"
+}
+
+const getEndToggleButtonLabel = (isEnabled:boolean) => {
+  return isEnabled ? HAS_END_TOGGLE_BUTTON_LABEL.ENABLED : HAS_END_TOGGLE_BUTTON_LABEL.NOT_ENABLED
+}
+
 class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, VersePickerState> {
   protected onDismiss:() => void 
   constructor(props: T){
@@ -41,13 +50,14 @@ class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, Verse
       },
       ui: {
         hasEnd: false,
-        hasEndText: "Has end?"
+        hasEndText: getEndToggleButtonLabel(false)
       }
       
     }
   }
 
   OnSelectorChange(startOrEnd:PassageStartOrEnd, selectionType:PassageSelectionType){
+    // TODO Validate end
     return (evt:ChangeEvent<HTMLSelectElement>) => {
       let updateState:VersePickerState = {...this.state};
       (updateState.data[startOrEnd] as any)[selectionType] = evt.target.value
@@ -69,17 +79,16 @@ class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, Verse
     updateState.ui.hasEnd = event.target.checked
     if (updateState.ui.hasEnd){
       updateState.data.end = {...updateState.data.start}
-      updateState.ui.hasEndText = "Has no end?"
     }
     else if ("end" in updateState.data){
       delete updateState.data.end
-      updateState.ui.hasEndText = "Has end?"
     }
+    updateState.ui.hasEndText = getEndToggleButtonLabel(updateState.ui.hasEnd)
     this.setState(updateState)
   }
 
   GetPassageSelection(startOrEnd:PassageStartOrEnd, selectionType:PassageSelectionType){
-    if (startOrEnd in this.state.data && selectionType in (this.state.data as any)[startOrEnd]){
+    if (startOrEnd in this.state.data && (this.state.data as any)[startOrEnd] && selectionType in (this.state.data as any)[startOrEnd]){
       return (this.state.data as any)[startOrEnd][selectionType]
     }
     return ""
@@ -188,7 +197,7 @@ export class VersePickerAdder extends VersePickerBase<VersePickerAdderProps>{
       },
       ui: {
         hasEnd: false,
-        hasEndText: "Has end?"
+        hasEndText: getEndToggleButtonLabel(false)
       }
     }
     this.onPassageAdd = this.props.onPassageAdd
@@ -197,7 +206,6 @@ export class VersePickerAdder extends VersePickerBase<VersePickerAdderProps>{
   render(): any {
       return (
         <div>
-          {/* <ModeToggle className={'mb-6'} mode={mode} switchMode={switchMode}/> */}
           <Box
             sx={{
               display: 'flex',
@@ -234,6 +242,65 @@ export class VersePickerAdder extends VersePickerBase<VersePickerAdderProps>{
   }
 }
 
+type VersePickerEditorProps = VersePickerBaseProps & {
+  onPassageEdit: (passageKey:string, addPassage:Passage) => void
+  selectedPassage: Passage
+  passageKey:string
+}
+export class VersePickerEditor extends VersePickerBase<VersePickerEditorProps>{
+
+
+  constructor(props: VersePickerEditorProps){
+    super(props)
+    const hasEnd = "end" in this.props.selectedPassage
+    this.state = {
+      data: {...this.props.selectedPassage},
+      ui: {
+        hasEnd: hasEnd,
+        hasEndText: getEndToggleButtonLabel(hasEnd)
+      }
+    }
+
+  }
+
+  render(): any {
+      return (
+        <div>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              '& > *': {
+                m: 1,
+              },
+            }}
+            className={"mb-6"}
+          >
+            {this.GetPassageSelector()}
+
+          </Box>
+          <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  '& > *': {
+                    m: 1,
+                  },
+                }}
+                className={"mb-6"}
+              >
+                <div style={{display: 'flex'}}>
+                  <Button variant="outlined" style={{marginRight: 8}} onClick={this.onDismiss}>Cancel</Button>
+                  <Button variant="outlined" style={{marginLeft: 8}} onClick={() => this.props.onPassageEdit( this.props.passageKey, this.state.data)}>Update</Button>
+                </div>
+          </Box>
+
+        </div>
+      )
+  }
+}
 // const VersePicker = ({
 //                        onDismiss,
 //                        onSetPassage,

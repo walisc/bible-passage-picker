@@ -5,6 +5,7 @@ import { BiblePassages, Passage, PassageDetails } from '../types'
 type VerseDiplayProps = React.ComponentPropsWithoutRef<'div'> & {
     selectedPassage: BiblePassages
     onUpdate: (passage: BiblePassages) => void
+    onEdit:  (event: any, pickerProps:any) => void
   }
 
 
@@ -12,6 +13,7 @@ class VerseModel{
     private startVerse:PassageDetails
     private endVerse?:PassageDetails
     private key:string
+
 
     constructor(passage:Passage, index:number){
         this.startVerse = passage.start
@@ -34,11 +36,17 @@ class VerseModel{
             end: this.endVerse
         }
     }
+
+    UpdateFromPassage(passage:Passage){
+        this.startVerse = passage.start
+        this.endVerse = passage.end
+    }
 }
   
 export const VersesDisplay = ({
                         selectedPassage,
                         onUpdate,
+                        onEdit,
                         ...props
                     }: VerseDiplayProps) => {
 
@@ -57,13 +65,28 @@ export const VersesDisplay = ({
             }))
         }
     }
+
+    const onEditComplete = (passageKey:string, addPassage:Passage) => {
+        let updateSelectedValues = {...selectedVersesModels}
+        updateSelectedValues[passageKey].UpdateFromPassage(addPassage)
+
+        //TODO: Repitions
+        onUpdate(Object.values(updateSelectedValues).map((verseModule)=>{
+            return verseModule.GetAsPassage()
+        }))
+    }
     
 
     return  (<div>
                 {
                     Object.values(selectedVersesModels).map((passage:VerseModel) =>{
                         const key = passage.GetVerseKey()
-                        return <Chip key={key} label={passage.GetVerseLabel()} onDelete={onDelete(key)} />
+                        return <Chip key={key} label={passage.GetVerseLabel()} onDelete={onDelete(key)} 
+                                onClick={(event: any) => onEdit(event, {
+                                    onPassageEdit: onEditComplete,
+                                    selectedPassage: passage.GetAsPassage(),
+                                    passageKey:key
+                                })} />
                     })
                 }
     </div>)

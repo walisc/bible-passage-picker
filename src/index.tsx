@@ -4,11 +4,26 @@ import {useState} from "react";
 import {getBiblePassageSelectionToDisplay, getPassageUrlInBibleGateway} from "./utils";
 import {Button, Grid, Popover} from "@mui/material";
 import { VersesDisplay } from './components/verse-display';
-import { VersePickerAdder } from './components/verse-picker';
+import { VersePickerAdder, VersePickerEditor } from './components/verse-picker';
 
 type BiblePassagePickerProps = React.ComponentPropsWithoutRef<'div'> & {
   initialPassages: BiblePassages
   onPassagesUpdated: (value: BiblePassages) => void
+}
+
+enum VersePickerTypesEnum {
+  Editor = "Editor",
+  Adder = "Added"
+}
+const VersePickerTypes = {
+  Editor: VersePickerEditor,
+  Added: VersePickerAdder
+}
+
+type PickerDisplay = {
+  targetElement: HTMLButtonElement | null,
+  pickerType: VersePickerTypesEnum | null
+  pickerProps: any 
 }
 
 export const BiblePassagePicker = ({
@@ -18,40 +33,55 @@ export const BiblePassagePicker = ({
                                    }: BiblePassagePickerProps) => {
 
 
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [displayState, setDisplayState] = useState<PickerDisplay>({
+    targetElement: null,
+    pickerType: null,
+    pickerProps: null
+  })
+
   const [selectedPassageState, updatePassagesState] = useState<BiblePassages>(initialPassages || []);
 
-  const handleShowPopover = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const handleShowPopover = (pickerType:VersePickerTypesEnum, event: React.MouseEvent<HTMLButtonElement>, pickerProps:any) => {
+    setDisplayState({
+      targetElement: event.currentTarget,
+      pickerType: pickerType,
+      pickerProps
+    });
+  }
 
   const handleClosePopover = () => {
-    setAnchorEl(null);
+    setDisplayState({
+      targetElement: null,
+      pickerType: null,
+      pickerProps: null
+    });
   };
-
-  const showBiblePassagePicker = Boolean(anchorEl);
-  const id = showBiblePassagePicker ? 'simple-popover' : undefined;
 
   const updatePassages = (biblePassages:BiblePassages) => {
     updatePassagesState(biblePassages)
     onPassagesUpdated(biblePassages)
+    handleClosePopover();
   }
 
   const onAddPassage = (addedPassage: Passage) => {
     updatePassages([...selectedPassageState, addedPassage])
-    handleClosePopover();
   }
 
+  const getPicker = (pickerType:VersePickerTypesEnum) => {
+    const Picker = VersePickerTypes[pickerType]
+    return <Picker onDismiss={handleClosePopover} {...displayState.pickerProps}/>
+  }
+  
   return <Grid item xs={12} md={6}  {...props}>
     <div style={{
       display: 'flex',
       alignItems: 'center'
     }}>
       <div style={{marginLeft: 8}}>
-        <VersesDisplay selectedPassage={selectedPassageState} onUpdate={updatePassages} />
+        <VersesDisplay selectedPassage={selectedPassageState} onUpdate={updatePassages} onEdit={( event: any, pickerProps:any) => handleShowPopover(VersePickerTypesEnum.Editor, event, pickerProps)}  />
       </div>
       {
-        <Button variant="text" id={id} onClick={handleShowPopover}>{'Add Passage'}</Button>
+        <Button variant="text" onClick={( event: React.MouseEvent<HTMLButtonElement>) => handleShowPopover(VersePickerTypesEnum.Adder, event, {onPassageAdd: onAddPassage})}>{'Add Passage'}</Button>
       }
       {/* <Button variant="text" id={id}
               onClick={handleShowPopover}>{getPassageUrlInBibleGateway(selectedPassage) ? 'Edit Passage' : 'Select Passage'}</Button>
@@ -59,14 +89,19 @@ export const BiblePassagePicker = ({
         <Button variant="text" href={getPassageUrlInBibleGateway(selectedPassage)} target={'_blank'}>Preview
           Selection</Button>} */}
     </div>
-    <Popover
-      open={showBiblePassagePicker}
-      onClose={handleClosePopover}
-      anchorEl={anchorEl}
-    >
-      <Grid item xs={12} md={6}>
-        <VersePickerAdder onDismiss={handleClosePopover} onPassageAdd={onAddPassage}/>
-      </Grid>
-    </Popover>
+    { 
+        displayState.pickerType && displayState.targetElement 
+        ? 
+          <Popover
+            open={true}
+            onClose={handleClosePopover}
+            anchorEl={displayState.targetElement}
+          >
+            <Grid item xs={12} md={6}> 
+              {getPicker(displayState.pickerType)}
+            </Grid>
+          </Popover>
+       : ``
+    }
   </Grid>
 }

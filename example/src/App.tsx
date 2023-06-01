@@ -5,21 +5,21 @@ import {BiblePassagePicker} from 'bible-passage-picker'
 import {BiblePassages} from "../../src/types";
 
 const App = () => {
-  const [selectedPassage, setSelectedPassage] = useState<BiblePassages>([{
+  const [selectedPassage] = useState<BiblePassages>([{
     start: {
-      book: "Gen",
+      book: "Genesis",
       chapter: 1,
       verse: 1
     },
     end: {
-      book: "Ep",
+      book: "Genesis",
       chapter: 1,
-      verse: 2
+      verse: 5
     }
    
   }]);
 
-  return <BiblePassagePicker initialPassages={selectedPassage} onPassagesUpdated={setSelectedPassage}/>
+  return <BiblePassagePicker initialPassages={selectedPassage} onPassagesUpdated={(bp: BiblePassages) => {console.log(bp)}}/>
 }
 
 export default App
