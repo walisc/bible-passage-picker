@@ -19,7 +19,7 @@ const App = () => {
    
   }]);
 
-  return <BiblePassagePicker value={selectedPassage} setValue={setSelectedPassage}/>
+  return <BiblePassagePicker initialPassages={selectedPassage} onPassagesUpdated={setSelectedPassage}/>
 }
 
 export default App
