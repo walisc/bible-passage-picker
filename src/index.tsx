@@ -1,7 +1,6 @@
 import * as React from 'react'
 import {BiblePassages, Passage} from './types'
 import {useState} from "react";
-import {getBiblePassageSelectionToDisplay, getPassageUrlInBibleGateway} from "./utils";
 import {Button, Grid, Popover} from "@mui/material";
 import { VersesDisplay } from './components/verse-display';
 import { VersePickerAdder, VersePickerEditor } from './components/verse-picker';

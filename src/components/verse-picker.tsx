@@ -1,9 +1,5 @@
-import React, {ChangeEvent, Component, useState} from 'react';
-import {Box, Button, NativeSelect, OutlinedInput, Switch, Typography} from "@mui/material";
-import ModeToggle from "./mode-toggle";
-import {getBiblePassageSelectionToDisplay, getPassageUrlInBibleGateway} from "../utils";
-import MultiplePassageForm from "./multiple-passage-form";
-import SinglePassageForm from "./single-passage-form";
+import React, {ChangeEvent, Component} from 'react';
+import {Box, Button, NativeSelect, OutlinedInput, Switch} from "@mui/material";
 import { Passage } from '../types';
 import BibleBooks from "../assets/bible_books.json";
 
@@ -99,6 +95,10 @@ class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, Verse
       return Array.from(Array(length).keys(), (v:number, i:number) => i+1)
     }
 
+    if (!((this.state.data as any)[startOrEnd])){
+      return []
+    }
+
     if (selectionType == "book"){
       return Object.keys(BibleBooks)
     }
@@ -164,7 +164,7 @@ class VersePickerBase<T extends VersePickerBaseProps> extends Component<T, Verse
             <Switch
                 checked={this.state.ui.hasEnd}
                 onChange={this.OnHasEndVerseSelected.bind(this)}
-                inputProps={{ 'aria-label': 'controlled' }}
+                inputProps={{ style: {height: '100%' }}}
               />
               <p style={{marginTop: "12px", fontSize: "12px"}}>{this.state.ui.hasEndText}</p>
           </div>
@@ -252,7 +252,7 @@ export class VersePickerEditor extends VersePickerBase<VersePickerEditorProps>{
 
   constructor(props: VersePickerEditorProps){
     super(props)
-    const hasEnd = "end" in this.props.selectedPassage
+    const hasEnd = "end" in this.props.selectedPassage && !!this.props.selectedPassage.end
     this.state = {
       data: {...this.props.selectedPassage},
       ui: {
